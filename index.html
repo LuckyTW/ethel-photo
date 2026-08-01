@@ -258,11 +258,11 @@
   <div class="status" id="prStatus"><span class="dot"></span><span id="prStatusText">프린터 연결 안 됨 (이미지 저장은 가능)</span></div>
 
   <label>성함 <span style="font-weight:400;opacity:.7">— 호칭까지 적으면 그대로 인쇄돼요</span></label>
-  <input type="text" id="guestName" placeholder="예) 김은혜 집사님, 박하늘 청년" autocomplete="off">
+  <input type="text" id="guestName" placeholder="예) 나태웅 집사님, 장웅비 청년" autocomplete="off">
 
   <label>내용</label>
   <div class="chips" id="contentModeChips" style="margin-bottom:4px">
-    <button class="chip sel" data-mode="random">🍀 말씀 (랜덤)</button>
+    <button class="chip sel" data-mode="random">🍀 말씀</button>
     <button class="chip" data-mode="manual">🙏 기도제목 직접</button>
   </div>
   <textarea id="manualInput" class="manual-input" rows="2" placeholder="함께 기도할 제목을 적어주세요 (예: 건강, 가정의 평화)" style="display:none"></textarea>
@@ -291,7 +291,9 @@
     <div class="verse-tag" id="verseTag"></div>
 
     <div class="row">
+      <!-- 말씀 고정 중이라 숨김. 되살리려면 pickVerse() 주석 참고
       <button class="btn ghost" id="rerollVerse">🍀 다른 말씀 뽑기</button>
+      -->
       <button class="btn ghost" id="retake">다시 찍기</button>
     </div>
     <div class="row">
@@ -422,8 +424,11 @@ $('bleCopyUrl').onclick = ()=>{
 $('bleGetApp').onclick = ()=> window.open(BLUEFY_URL, '_blank');
 syncBleBanner();
 
-/* ================= 축복 말씀 풀 ================= */
+/* ================= 축복 말씀 ================= */
 const VERSES = [
+  ["우리가 사랑함은 그가 먼저 우리를 사랑하셨음이니라","요한일서 4:19"],
+];
+/* ── 지난 말씀 풀(100개) — 아래 pickVerse() 의 안내대로 되살릴 수 있다 ──
   ["여호와는 네게 복을 주시고 너를 지키시기를 원하며","민수기 6:24"],
   ["내가 너와 함께 있어 네가 어디로 가든지 너를 지키리라","창세기 28:15"],
   ["너는 내 것이라 내가 너를 지명하여 불렀나니","이사야 43:1"],
@@ -524,8 +529,16 @@ const VERSES = [
   ["하나님은 사랑이시라 사랑 안에 거하는 자는 하나님 안에 거하고","요한일서 4:16"],
   ["네 영혼이 잘됨 같이 네가 범사에 잘되고 강건하기를 내가 간구하노라","요한삼서 1:2"],
   ["할렐루야 여호와를 찬양함이 선함이여 찬송함이 아름답고 마땅하도다","시편 147:1"],
-];
-let verseIdx = Math.floor(Math.random()*VERSES.length);
+*/
+
+/* 말씀은 요한일서 4:19 한 개로 고정(교회 요청).
+   다시 여러 말씀에서 무작위로 뽑으려면
+     ① 위 '지난 말씀 풀' 주석을 풀어 100개를 VERSES 배열 안으로 되돌리고
+     ② 이 함수의 반환값을 Math.floor(Math.random()*VERSES.length) 로 바꾸고
+     ③ '🍀 다른 말씀 뽑기' 버튼 관련 주석 3곳(HTML·표시제어·클릭핸들러)을 풀면 된다.
+   뽑기 지점이 여러 곳(초기·촬영·업로드·사진없이)이라 이 함수 하나로 모아 둔다. */
+function pickVerse(){ return 0; }
+let verseIdx = pickVerse();
 
 /* ================= 설정값 ================= */
 const cfg = {
@@ -1090,7 +1103,7 @@ $('retake').onclick = ()=>{ syncFacing(); startCam(); };
 /* ✍️ 사진 없이 카드만: 촬영이 부담스러운 분들용 — 말씀+이름만 */
 $('noPhotoBtn').onclick = async ()=>{
   photoBitmap = null;
-  verseIdx = Math.floor(Math.random()*VERSES.length);
+  verseIdx = pickVerse();
   await renderPreview();
   window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
 };
@@ -1100,7 +1113,7 @@ function syncContentMode(){
   document.querySelectorAll('#contentModeChips .chip').forEach(c=>
     c.classList.toggle('sel', (c.dataset.mode==='manual')===manualMode));
   $('manualInput').style.display = manualMode ? 'block' : 'none';
-  $('rerollVerse').style.display = manualMode ? 'none' : '';
+  // $('rerollVerse').style.display = manualMode ? 'none' : '';   // 말씀 고정 중
 }
 document.querySelectorAll('#contentModeChips .chip').forEach(c=>{
   c.onclick = async ()=>{
@@ -1158,7 +1171,7 @@ async function captureFrame(){
   $('camView').classList.remove('show');
   photoBitmap = c;
   effectSeed = (Math.random()*1e9)|0;   // 새 사진 → 새 효과 배치 (탭 간에는 동일)
-  verseIdx = Math.floor(Math.random()*VERSES.length);
+  verseIdx = pickVerse();
   await renderPreview();
   window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
 }
@@ -1185,15 +1198,17 @@ $('camInput').onchange = async e=>{
   if(!f) return;
   await loadPhoto(f);
   effectSeed = (Math.random()*1e9)|0;
-  verseIdx = Math.floor(Math.random()*VERSES.length);
+  verseIdx = pickVerse();
   await renderPreview();
   window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
   e.target.value = '';
 };
+/* 말씀 고정 중이라 비활성. 되살리려면 pickVerse() 주석 참고
 $('rerollVerse').onclick = async ()=>{
   verseIdx = (verseIdx + 1 + Math.floor(Math.random()*(VERSES.length-1))) % VERSES.length;
   await renderPreview();
 };
+*/
 /* ---------- 탭 · 곱게 토글 ---------- */
 function syncTabs(){
   document.querySelectorAll('.vtab').forEach(t=>t.classList.toggle('on', t.dataset.m===viewMode));
